@@ -21,7 +21,7 @@ def main():
     api_token = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Token', is_mandatory=True, print_value=False)
     verify_ssl = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Verify SSL', default_value=False, input_type=bool)
     
-	simplify.LOGGER.info("-------------- Main - Started --------------")
+    simplify.LOGGER.info("-------------- Main - Started --------------")
 	
     # Extracting list of issues in JSON format
     issues_json = extract_action_param(simplify, param_name="Issues List", is_mandatory=True, print_value=False)
