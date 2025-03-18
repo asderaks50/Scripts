@@ -155,3 +155,89 @@
     </script>
 </body>
 </html>
+
+
+======================================================================================================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UDM Events Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h2>UDM Events Viewer</h2>
+    <table id="udmTable">
+        <thead>
+            <tr id="headerRow"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        function chunkArray(array, size) {
+            const result = [];
+            for (let i = 0; i < array.length; i += size) {
+                result.push(array.slice(i, i + size).join(', '));
+            }
+            return result;
+        }
+
+        function displayUDMEvents(events) {
+            const tableHeader = document.getElementById('headerRow');
+            const tableBody = document.getElementById('tableBody');
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            if (!Array.isArray(events) || events.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">No valid UDM events found.</td></tr>';
+                return;
+            }
+            
+            // Define required keys to ensure they always appear in the table
+            const requiredKeys = ['detection_id', 'detection_user_names', 'detection_geo_location', 'detection_ip_values'];
+            const allKeys = new Set(requiredKeys);
+            events.forEach(event => Object.keys(event).forEach(key => allKeys.add(key)));
+            const keys = Array.from(allKeys);
+            
+            keys.forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                tableHeader.appendChild(th);
+            });
+            
+            events.forEach(event => {
+                const ipChunks = event.detection_ip_values ? chunkArray(event.detection_ip_values, 15) : [''];
+                ipChunks.forEach((chunk, index) => {
+                    const row = document.createElement('tr');
+                    keys.forEach(key => {
+                        const td = document.createElement('td');
+                        if (key === 'detection_ip_values') {
+                            td.textContent = chunk;
+                        } else if (key === 'detection_user_names' && Array.isArray(event[key])) {
+                            td.textContent = event[key].join(', ');
+                        } else {
+                            td.textContent = index === 0 ? (event[key] || '') : ''; // Avoid repeating non-IP fields
+                        }
+                        row.appendChild(td);
+                    });
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+        
+        // Dynamically use Event fields
+        const udmEvents = [Event]; // Assuming Event is provided globally in the SOAR playbook context
+        
+        displayUDMEvents(udmEvents);
+    </script>
+</body>
+</html>
+
