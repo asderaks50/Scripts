@@ -94,6 +94,14 @@
     </table>
 
     <script>
+        function chunkArray(array, size) {
+            const result = [];
+            for (let i = 0; i < array.length; i += size) {
+                result.push(array.slice(i, i + size).join(', '));
+            }
+            return result;
+        }
+
         function displayUDMEvents(events) {
             const tableHeader = document.getElementById('headerRow');
             const tableBody = document.getElementById('tableBody');
@@ -117,13 +125,26 @@
             });
             
             events.forEach(event => {
-                const row = document.createElement('tr');
-                keys.forEach(key => {
-                    const td = document.createElement('td');
-                    td.textContent = Array.isArray(event[key]) ? event[key].join(', ') : event[key] || '';
-                    row.appendChild(td);
+                const rowGroup = document.createDocumentFragment();
+                
+                const ipChunks = event.detection_ip_values ? chunkArray(event.detection_ip_values, 15) : [''];
+                ipChunks.forEach((chunk, index) => {
+                    const row = document.createElement('tr');
+                    keys.forEach(key => {
+                        const td = document.createElement('td');
+                        if (key === 'detection_ip_values') {
+                            td.textContent = chunk;
+                        } else if (Array.isArray(event[key])) {
+                            td.textContent = event[key].join(', ');
+                        } else {
+                            td.textContent = event[key] || '';
+                        }
+                        row.appendChild(td);
+                    });
+                    rowGroup.appendChild(row);
                 });
-                tableBody.appendChild(row);
+                
+                tableBody.appendChild(rowGroup);
             });
         }
         
