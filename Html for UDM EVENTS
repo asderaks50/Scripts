@@ -68,3 +68,69 @@
     </script>
 </body>
 </html>
+
+=======================================================================================================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UDM Events Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h2>UDM Events Viewer</h2>
+    <table id="udmTable">
+        <thead>
+            <tr id="headerRow"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        function displayUDMEvents(events) {
+            const tableHeader = document.getElementById('headerRow');
+            const tableBody = document.getElementById('tableBody');
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            if (!Array.isArray(events) || events.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">No valid UDM events found.</td></tr>';
+                return;
+            }
+            
+            // Collect all unique fields from multiple UDM events
+            const allKeys = new Set();
+            events.forEach(event => Object.keys(event).forEach(key => allKeys.add(key)));
+            const keys = Array.from(allKeys);
+            
+            keys.forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                tableHeader.appendChild(th);
+            });
+            
+            events.forEach(event => {
+                const row = document.createElement('tr');
+                keys.forEach(key => {
+                    const td = document.createElement('td');
+                    td.textContent = Array.isArray(event[key]) ? event[key].join(', ') : event[key] || '';
+                    row.appendChild(td);
+                });
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Expect SOAR playbook to populate window.udmEvents
+        if (window.udmEvents) {
+            displayUDMEvents(window.udmEvents);
+        }
+    </script>
+</body>
+</html>
