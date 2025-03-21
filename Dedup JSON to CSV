@@ -1,15 +1,16 @@
 from SiemplifyAction import SiemplifyAction
 from SiemplifyUtils import unix_now, convert_unixtime_to_datetime, output_handler
-from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED, EXECUTION_STATE_TIMEOUT
+from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
 import json, csv
 from io import StringIO
 
 def verify_list_of_dict(var):
-    if not isinstance(var, list):
-        return False
-    if not all(isinstance(v, dict) for v in var):
-        return False
-    return True
+    """Ensure the input is a list of dictionaries."""
+    if isinstance(var, dict):  # Convert single dictionary to a list
+        return [var]
+    if isinstance(var, list) and all(isinstance(v, dict) for v in var):
+        return var
+    return None
 
 def remove_duplicates(data):
     """Remove duplicate dictionaries from a list."""
@@ -31,9 +32,12 @@ def main():
     result_value = True
     
     try:
-        data = json.loads(json_input)
-        assert verify_list_of_dict(data), 'Expected JSON object is not a list of dictionaries.'
+        data = json.loads(json_input)  # Convert JSON string to Python object
+        data = verify_list_of_dict(data)  # Ensure it's a list of dictionaries
         
+        if data is None:
+            raise ValueError("Expected JSON input to be a list of dictionaries.")
+
         # Remove duplicate dictionaries
         unique_data = remove_duplicates(data)
         
