@@ -1,6 +1,6 @@
 from SiemplifyAction import SiemplifyAction
 from SiemplifyUtils import unix_now, convert_unixtime_to_datetime, output_handler
-from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
+from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED, EXECUTION_STATE_TIMEOUT
 import json, csv
 from io import StringIO
 
@@ -12,9 +12,20 @@ def verify_list_of_dict(var):
         return var
     return None
 
+def hashable_dict(d):
+    """Convert dictionary values that are lists into tuples so they become hashable."""
+    return {k: tuple(v) if isinstance(v, list) else v for k, v in d.items()}
+
 def remove_duplicates(data):
-    """Remove duplicate dictionaries from a list."""
-    return [dict(t) for t in {tuple(d.items()) for d in data}]
+    """Remove duplicate dictionaries from a list (handling unhashable types)."""
+    seen = set()
+    unique_data = []
+    for d in data:
+        hashed = frozenset(hashable_dict(d).items())  # Use frozenset instead of tuple
+        if hashed not in seen:
+            seen.add(hashed)
+            unique_data.append(d)
+    return unique_data
 
 @output_handler
 def main():
