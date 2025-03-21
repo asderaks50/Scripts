@@ -1,0 +1,94 @@
+import json
+from TIPCommon import extract_configuration_param, extract_action_param
+from JiraConstants import INTEGRATION_IDENTIFIER, CREATE_ISSUE_SCRIPT_NAME
+from JiraRestManager import JiraRestManager
+from JiraManager import JiraManager
+from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
+from SimplifyAction import SimplifyAction
+from SimplifyUtils import output_handler
+from exceptions import JiraValidationError, JiraGDPRError
+from utils import load_csv_to_list
+
+@output_handler
+def main():
+    simplify = SimplifyAction()
+    simplify.script_name = CREATE_ISSUE_SCRIPT_NAME
+    simplify.LOGGER.info("-------------- Main - Param Init --------------")
+
+    # Extracting configuration parameters
+    api_root = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Root', is_mandatory=True, print_value=True)
+    username = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Username', is_mandatory=True, print_value=True)
+    api_token = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Token', is_mandatory=True, print_value=False)
+    verify_ssl = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Verify SSL', default_value=False, input_type=bool)
+    
+    # Extracting list of issues in JSON format
+    issues_json = extract_action_param(simplify, param_name="Issues List", is_mandatory=True, print_value=False)
+    
+    try:
+        issues_list = json.loads(issues_json)
+    except Exception:
+        raise Exception("Invalid JSON payload provided in 'Issues List'. Please check the structure.")
+    
+    # Connect to Jira
+    jira = JiraManager(api_root, username, api_token, verify_ssl=verify_ssl)
+    
+    created_issues = []
+    failed_issues = []
+    
+    for issue in issues_list:
+        try:
+            project_key = issue.get("Project Key")
+            summary = issue.get("Summary")
+            description = issue.get("Description", "")
+            issue_type = issue.get("Issue Type")
+            assignee = issue.get("Assignee", "")
+            components = issue.get("Components", "")
+            labels = issue.get("Labels", "")
+            custom_fields = issue.get("Custom Fields", "{}")
+            
+            custom_fields_dict = json.loads(custom_fields) if custom_fields else {}
+            
+            # Fetch project components
+            components_list_to_api_call = []
+            if components:
+                components_list = load_csv_to_list(components, "Components")
+                project_components = jira.get_project_components(project=project_key)
+                existing_components = [comp for comp in project_components if comp.name in components_list]
+                components_list_to_api_call = [{"id": comp.id} for comp in existing_components]
+                
+            # Finding Assignee
+            user_assignee = ""
+            if assignee:
+                users = jira.get_users_contains_username(username=assignee)
+                for user in users:
+                    if (user.email_address and user.email_address == assignee) or (user.display_name and user.display_name == assignee) or (user.raw_data.get("name") == assignee):
+                        user_assignee = user.raw_data.get("name")
+                        break
+                if not user_assignee:
+                    raise JiraValidationError(f"User {assignee} does not exist.")
+            
+            # Creating Issue
+            issue_key = jira.create_issue(project_key, summary, issue_type, description, components=components_list_to_api_call, labels=labels, custom_fields=custom_fields_dict)
+            
+            # Assign Issue
+            if user_assignee:
+                jira.assign_issue(issue_key, assignee=user_assignee)
+            
+            created_issues.append(issue_key)
+        
+        except Exception as error:
+            failed_issues.append({"Issue": summary, "Error": str(error)})
+    
+    # Generate Output Message
+    output_message = f"Successfully created {len(created_issues)} issue(s): {', '.join(created_issues)}. "
+    if failed_issues:
+        output_message += f"Failed to create {len(failed_issues)} issue(s). Errors: {json.dumps(failed_issues)}"
+        status = EXECUTION_STATE_FAILED
+    else:
+        status = EXECUTION_STATE_COMPLETED
+    
+    simplify.LOGGER.info(output_message)
+    simplify.end(output_message, json.dumps({"Created Issues": created_issues, "Failed Issues": failed_issues}), status)
+
+if __name__ == "__main__":
+    main()
