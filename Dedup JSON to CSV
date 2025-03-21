@@ -6,22 +6,26 @@ from io import StringIO
 
 def verify_list_of_dict(var):
     """Ensure the input is a list of dictionaries."""
-    if isinstance(var, dict):  # Convert single dictionary to a list
+    if isinstance(var, dict):  # Convert a single dictionary to a list
         return [var]
     if isinstance(var, list) and all(isinstance(v, dict) for v in var):
         return var
     return None
 
-def hashable_dict(d):
-    """Convert dictionary values that are lists into tuples so they become hashable."""
-    return {k: tuple(v) if isinstance(v, list) else v for k, v in d.items()}
+def make_hashable(value):
+    """Recursively convert lists to tuples and dictionaries to frozensets so they become hashable."""
+    if isinstance(value, dict):
+        return frozenset((k, make_hashable(v)) for k, v in value.items())  # Convert dict → frozenset
+    elif isinstance(value, list):
+        return tuple(make_hashable(v) for v in value)  # Convert list → tuple
+    return value  # Leave immutable types unchanged
 
 def remove_duplicates(data):
-    """Remove duplicate dictionaries from a list (handling unhashable types)."""
+    """Remove duplicate dictionaries from a list, handling nested structures."""
     seen = set()
     unique_data = []
     for d in data:
-        hashed = frozenset(hashable_dict(d).items())  # Use frozenset instead of tuple
+        hashed = frozenset((k, make_hashable(v)) for k, v in d.items())  # Ensure everything is hashable
         if hashed not in seen:
             seen.add(hashed)
             unique_data.append(d)
