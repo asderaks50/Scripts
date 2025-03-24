@@ -81,15 +81,15 @@ def main():
             # Create CSV file
             create_csv_file(csv_file_path, unique_data, headers, quoting)
 
-            # Read file contents for attachment
-            with open(csv_file_path, "r", encoding="utf-8") as file:
+            # Read file contents as bytes (fixing the issue)
+            with open(csv_file_path, "rb") as file:
                 file_contents = file.read()
 
-            # Attach CSV file to Siemplify
+            # Attach CSV file to Siemplify (FIXED)
             siemplify.result.add_attachment(csv_file_name, file_contents)
 
             output_message = f"CSV file {csv_file_name} has been generated and attached."
-            result_value = csv_file_name
+            result_value = csv_file_path
         else:
             output_message = "No valid data to write to CSV."
             result_value = None
