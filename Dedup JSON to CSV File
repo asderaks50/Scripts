@@ -1,5 +1,5 @@
 from SiemplifyAction import SiemplifyAction
-from SiemplifyUtils import unix_now, convert_unixtime_to_datetime, output_handler
+from SiemplifyUtils import unix_now, output_handler
 from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
 import json
 import csv
@@ -12,8 +12,8 @@ SCRIPT_START = datetime.now(timezone.utc)
 
 def verify_list_of_dict(var):
     """Ensure the input is a list of dictionaries."""
-    if isinstance(var, dict):  # Convert a single dictionary to a list
-        return [var]
+    if isinstance(var, dict):  
+        return [var]  # Convert a single dictionary to a list
     if isinstance(var, list) and all(isinstance(v, dict) for v in var):
         return var
     return None
@@ -24,14 +24,14 @@ def make_hashable(value):
         return frozenset((k, make_hashable(v)) for k, v in value.items())  # Convert dict → frozenset
     elif isinstance(value, list):
         return tuple(make_hashable(v) for v in value)  # Convert list → tuple
-    return value  # Leave immutable types unchanged
+    return value  
 
 def remove_duplicates(data):
-    """Remove duplicate dictionaries from a list, handling nested structures."""
+    """Remove duplicate dictionaries from a list."""
     seen = set()
     unique_data = []
     for d in data:
-        hashed = frozenset((k, make_hashable(v)) for k, v in d.items())  # Ensure everything is hashable
+        hashed = frozenset((k, make_hashable(v)) for k, v in d.items())
         if hashed not in seen:
             seen.add(hashed)
             unique_data.append(d)
@@ -58,7 +58,7 @@ def main():
     quoting = quoting_map.get(quoting_input.title(), csv.QUOTE_MINIMAL)
 
     status = EXECUTION_STATE_COMPLETED
-    output_message = "Completed"
+    output_message = "CSV file successfully created."
     result_value = True
 
     try:
@@ -69,7 +69,7 @@ def main():
         if data is None:
             raise ValueError("Expected JSON input to be a list of dictionaries.")
 
-        # Remove duplicate dictionaries
+        # Remove duplicates
         unique_data = remove_duplicates(data)
         headers = {h for d in unique_data for h in d.keys()}
 
@@ -81,14 +81,7 @@ def main():
             # Create CSV file
             create_csv_file(csv_file_path, unique_data, headers, quoting)
 
-            # Read file contents as a string (fixing the issue)
-            with open(csv_file_path, "r", encoding="utf-8") as file:
-                file_contents = file.read()
-
-            # Attach CSV file to Siemplify (FIXED)
-            siemplify.result.add_attachment(csv_file_name, file_contents)
-
-            output_message = f"CSV file {csv_file_name} has been generated and attached."
+            output_message = f"CSV file {csv_file_name} has been successfully created and stored at {csv_file_path}."
             result_value = csv_file_path
         else:
             output_message = "No valid data to write to CSV."
