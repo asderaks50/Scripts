@@ -43,6 +43,13 @@ def create_csv_file(file_path, data, headers, quoting):
         writer = csv.DictWriter(f, fieldnames=headers, quoting=quoting, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(data)
+
+    with open(file_path, "rb") as file:
+        file_contents = file.read()
+
+    # Attach the CSV file to Siemplify (Corrected Parameter Names)
+    siemplify.result.add_attachment(file_name=file_path, content=file_contents)
+
     return file_path
 
 @output_handler
