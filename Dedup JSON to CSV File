@@ -1,9 +1,12 @@
 from SiemplifyAction import SiemplifyAction
 from SiemplifyUtils import unix_now, convert_unixtime_to_datetime, output_handler
 from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
-import json, csv, os
+import json
+import csv
+import os
 from datetime import datetime, timezone
 
+# Constants
 TMP_DIR = "/tmp/"
 SCRIPT_START = datetime.now(timezone.utc)
 
@@ -59,6 +62,7 @@ def main():
     result_value = True
 
     try:
+        # Parse JSON input
         data = json.loads(json_input)
         data = verify_list_of_dict(data)
 
@@ -77,8 +81,12 @@ def main():
             # Create CSV file
             create_csv_file(csv_file_path, unique_data, headers, quoting)
 
+            # Read file contents for attachment
+            with open(csv_file_path, "r", encoding="utf-8") as file:
+                file_contents = file.read()
+
             # Attach CSV file to Siemplify
-            siemplify.result.add_attachment(csv_file_name, csv_file_path)
+            siemplify.result.add_attachment(csv_file_name, file_contents)
 
             output_message = f"CSV file {csv_file_name} has been generated and attached."
             result_value = csv_file_name
