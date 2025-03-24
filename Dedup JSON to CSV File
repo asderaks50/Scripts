@@ -71,11 +71,17 @@ def main():
 
         if unique_data:
             # Generate a timestamped CSV file name
-            csv_file_path = os.path.join(TMP_DIR, f"{file_name}_{SCRIPT_START.strftime('%Y%m%d_%H%M%S')}.csv")
+            csv_file_name = f"{file_name}_{SCRIPT_START.strftime('%Y%m%d_%H%M%S')}.csv"
+            csv_file_path = os.path.join(TMP_DIR, csv_file_name)
+
+            # Create CSV file
             create_csv_file(csv_file_path, unique_data, headers, quoting)
-            
-            output_message = f"CSV file {csv_file_path} has been generated"
-            result_value = csv_file_path
+
+            # Attach CSV file to Siemplify
+            siemplify.result.add_attachment(csv_file_name, csv_file_path)
+
+            output_message = f"CSV file {csv_file_name} has been generated and attached."
+            result_value = csv_file_name
         else:
             output_message = "No valid data to write to CSV."
             result_value = None
