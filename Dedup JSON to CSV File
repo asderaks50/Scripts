@@ -5,7 +5,6 @@ import json
 import csv
 import os
 from datetime import datetime, timezone
-from SchwabUtils import create_csv_file, construct_csv
 
 # Constants
 TMP_DIR = "/tmp/"
@@ -82,13 +81,12 @@ def main():
             # Create CSV file
             create_csv_file(csv_file_path, unique_data, headers, quoting)
 
-            # Read file contents as bytes (fixing the issue)
-            with open(csv_file_path, "rb") as file:
+            # Read file contents as a string (fixing the issue)
+            with open(csv_file_path, "r", encoding="utf-8") as file:
                 file_contents = file.read()
 
             # Attach CSV file to Siemplify (FIXED)
-            #siemplify.result.add_attachment(csv_file_name, file_contents)
-            siemplify.result.add_data_table(title="UDM to CSV table", data_table=construct_csv(flat_udm))
+            siemplify.result.add_attachment(csv_file_name, file_contents)
 
             output_message = f"CSV file {csv_file_name} has been generated and attached."
             result_value = csv_file_path
@@ -97,14 +95,13 @@ def main():
             result_value = None
 
         siemplify.result.add_result_json({"csv_file": result_value})
-        
 
     except Exception as e:
         status = EXECUTION_STATE_FAILED
         output_message = f"Error: {str(e)}"
         result_value = ""
 
-    siemplify.LOGGER.info("\nStatus: {}\nResult Value: {}\nOutput Message: {}".format(status, result_value, output_message))
+    siemplify.LOGGER.info(f"\nStatus: {status}\nResult Value: {result_value}\nOutput Message: {output_message}")
     siemplify.end(output_message, result_value, status)
 
 if __name__ == "__main__":
