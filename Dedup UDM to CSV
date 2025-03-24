@@ -1,0 +1,69 @@
+from SiemplifyAction import SiemplifyAction
+from SiemplifyUtils import output_handler, dict_to_flat
+from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED, EXECUTION_STATE_TIMEOUT
+from SchwabUtils import create_csv_file, construct_csv
+
+import json
+from datetime import datetime, timezone
+
+SCRIPT_NAME = "Dedup UDM To CSV"
+SCRIPT_START = datetime.now(timezone.utc)
+TMP_DIR = "/tmp/"
+
+@output_handler
+def main():
+    siemplify = SiemplifyAction()
+
+    try:
+        udm = json.loads(siemplify.extract_action_param("UDM", print_value=True))
+        fields = siemplify.extract_action_param("Fields", print_value=True)
+        field_list = []
+        if fields:
+            for field in fields.split(','):
+                field_list.append(field.strip())
+        else:
+            fields = []
+
+		flat_udm = []
+
+		if isinstance(udm, list):
+			data = udm
+		else:
+			data = udm.get("events", [udm])
+
+		for row in data:
+			if not row: continue
+			flat_row = dict_to_flat(row)
+			if field_list:
+				new_row = {}
+				for k, v in flat_row.items():
+					if k in field_list:
+						new_row[k] = str(v)
+				flat_udm.append(new_row)
+			else:
+				flat_udm.append(flat_row)
+
+		if flat_udm:
+			flat_udm = [dict(t) for t in {tuple(d.items()) for d in flat_udm}]
+			csv_file = TMP_DIR + "udm_" + SCRIPT_START.strftime("%Y%m%d_%H%M%S%f") + ".csv"
+			create_csv_file(csv_file, flat_udm, fields=field_list)
+			output_message = f"CSV file {csv_file} has been generated"
+		else:
+			csv_file = None
+		siemplify.result.add_result_json(flat_udm)
+
+		status = EXECUTION_STATE_COMPLETED
+		result_value = csv_file
+		siemplify.result.add_data_table(title="UDM to CSV table", data_table=construct_csv(flat_udm))
+
+	except Exception as e:
+		siemplify.LOGGER.exception(e)
+		status = EXECUTION_STATE_FAILED
+		output_message = str(e)
+		result_value = ""
+
+	siemplify.LOGGER.info("\n status: {}\n result_value: {}\n output_message: {}".format(status, result_value, output_message))
+	siemplify.end(output_message, result_value, status)
+
+if __name__ == "__main__":
+    main()
