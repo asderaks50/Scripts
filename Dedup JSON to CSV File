@@ -5,6 +5,7 @@ import json
 import csv
 import os
 from datetime import datetime, timezone
+from SchwabUtils import create_csv_file, construct_csv
 
 # Constants
 TMP_DIR = "/tmp/"
@@ -86,7 +87,8 @@ def main():
                 file_contents = file.read()
 
             # Attach CSV file to Siemplify (FIXED)
-            siemplify.result.add_attachment(csv_file_name, file_contents)
+            #siemplify.result.add_attachment(csv_file_name, file_contents)
+            siemplify.result.add_data_table(title="UDM to CSV table", data_table=construct_csv(flat_udm))
 
             output_message = f"CSV file {csv_file_name} has been generated and attached."
             result_value = csv_file_path
@@ -95,6 +97,7 @@ def main():
             result_value = None
 
         siemplify.result.add_result_json({"csv_file": result_value})
+        
 
     except Exception as e:
         status = EXECUTION_STATE_FAILED
