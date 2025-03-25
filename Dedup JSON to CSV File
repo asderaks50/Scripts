@@ -48,6 +48,9 @@ def create_csv_file(file_path, data, headers, quoting, siemplify):
         with open(file_path, "rb") as file:
             file_contents = file.read()
 
+        print(file_contents)
+        print(os.path.basename(file_path))
+
         # Attach the CSV file to Siemplify
         siemplify.result.add_attachment(os.path.basename(file_path), file_contents)
         siemplify.LOGGER.info(f"CSV file {file_path} successfully created and attached.")
