@@ -37,28 +37,35 @@ def remove_duplicates(data):
             unique_data.append(d)
     return unique_data
 
-def create_csv_file(file_path, data, headers, quoting):
-    """Create a CSV file from a list of dictionaries."""
-    with open(file_path, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=headers, quoting=quoting, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(data)
+def create_csv_file(file_path, data, headers, quoting, siemplify):
+    """Create a CSV file from a list of dictionaries and attach it to Siemplify."""
+    try:
+        with open(file_path, mode="w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=headers, quoting=quoting, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(data)
 
-    with open(file_path, "rb") as file:
-        file_contents = file.read()
+        with open(file_path, "rb") as file:
+            file_contents = file.read()
 
-    # Attach the CSV file to Siemplify (Corrected Parameter Names)
-    siemplify.result.add_attachment(file_name=file_path, content=file_contents)
+        # Attach the CSV file to Siemplify
+        siemplify.result.add_attachment(file_name=os.path.basename(file_path), content=file_contents)
+        siemplify.LOGGER.info(f"CSV file {file_path} successfully created and attached.")
+        
+        return file_path
 
-    return file_path
+    except Exception as e:
+        siemplify.LOGGER.error(f"Error creating CSV file: {str(e)}")
+        raise
 
 @output_handler
 def main():
     siemplify = SiemplifyAction()
     
+    # Extract input parameters
     json_input = siemplify.extract_action_param("json", print_value=True)
-    quoting_input = siemplify.extract_action_param("quoting")
-    file_name = siemplify.extract_action_param("file_name")
+    quoting_input = siemplify.extract_action_param("quoting", default_value="Minimal")
+    file_name = siemplify.extract_action_param("file_name", default_value="output")
 
     # Default quoting mode is minimal
     quoting_map = {"All": csv.QUOTE_ALL, "Minimal": csv.QUOTE_MINIMAL, "Nonnumeric": csv.QUOTE_NONNUMERIC}
@@ -69,10 +76,17 @@ def main():
     result_value = True
 
     try:
-        # Parse JSON input
-        data = json.loads(json_input)
-        data = verify_list_of_dict(data)
+        # Validate JSON input
+        if not json_input.strip():
+            raise ValueError("JSON input is empty. Please provide valid JSON data.")
 
+        # Parse JSON input safely
+        try:
+            data = json.loads(json_input)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {str(e)}")
+
+        data = verify_list_of_dict(data)
         if data is None:
             raise ValueError("Expected JSON input to be a list of dictionaries.")
 
@@ -86,7 +100,7 @@ def main():
             csv_file_path = os.path.join(TMP_DIR, csv_file_name)
 
             # Create CSV file
-            create_csv_file(csv_file_path, unique_data, headers, quoting)
+            create_csv_file(csv_file_path, unique_data, headers, quoting, siemplify)
 
             output_message = f"CSV file {csv_file_name} has been successfully created and stored at {csv_file_path}."
             result_value = csv_file_path
