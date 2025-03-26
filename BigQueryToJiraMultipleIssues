@@ -20,7 +20,17 @@ def main():
     username = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Username', is_mandatory=True, print_value=True)
     api_token = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Token', is_mandatory=True, print_value=False)
     verify_ssl = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Verify SSL', default_value=False, input_type=bool)
-    
+
+    # Action parameters
+    project_key = extract_action_param(simplify, param_name="Project Key", is_mandatory=True, print_value=True)
+    summary = extract_action_param(simplify, param_name="Summary", is_mandatory=True, print_value=True)
+    description = extract_action_param(simplify, param_name="Description", is_mandatory=False, print_value=True)
+    issue_type = extract_action_param(simplify, param_name="Issue Type", is_mandatory=True, print_value=True)
+    initiator = extract_action_param(simplify, param_name="Jira Username", is_mandatory=False, print_value=True)
+    assignee = extract_action_param(simplify, param_name="Assignee", is_mandatory=False, print_value=True)
+    components = extract_action_param(simplify, param_name="Components", is_mandatory=False, print_value=True)
+    labels = extract_action_param(simplify, param_name="Labels", is_mandatory=False, print_value=True)
+    custom_fields = extract_action_param(simplify, param_name="Custom Fields", is_mandatory=False, print_value=True)
     simplify.LOGGER.info("-------------- Main - Started --------------")
 	
     # Extracting list of issues in JSON format
