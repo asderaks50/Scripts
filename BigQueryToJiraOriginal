@@ -1,94 +1,93 @@
-	import json
+import json
 
-	from TIPCommon import extract_configuration_param, extract_action_param
+from TIPCommon import extract_configuration_param, extract_action_param
 
-	from JiraConstants import INTEGRATION_IDENTIFIER, CREATE_ISSUE_SCRIPT_NAME
-	from JiraRestManager import JiraRestManager
-	from JiraManager import JiraManager
-	from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
-	from SimplifyAction import SimplifyAction
-	from SimplifyUtils import output_handler
-	from exceptions import JiraValidationError, JiraGDPRError
-	from utils import load_csv_to_list
+from JiraConstants import INTEGRATION_IDENTIFIER, CREATE_ISSUE_SCRIPT_NAME
+from JiraRestManager import JiraRestManager
+from JiraManager import JiraManager
+from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
+from SimplifyAction import SimplifyAction
+from SimplifyUtils import output_handler
+from exceptions import JiraValidationError, JiraGDPRError
+from utils import load_csv_to_list
 
-	@output_handler
-	def main():
-		simplify = SimplifyAction()
-		simplify.script_name = CREATE_ISSUE_SCRIPT_NAME
-		simplify.LOGGER.info("-------------- Main - Param Init --------------")
+@output_handler
+def main():
+    simplify = SimplifyAction()
+    simplify.script_name = CREATE_ISSUE_SCRIPT_NAME
+    simplify.LOGGER.info("-------------- Main - Param Init --------------")
 
-		# Integration Configuration
-		api_root = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Root', is_mandatory=True, print_value=True)
-		username = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Username', is_mandatory=True, print_value=True)
-		api_token = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Token', is_mandatory=True, print_value=False)
-		verify_ssl = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Verify SSL', default_value=False, input_type=bool)
+    # Integration Configuration
+    api_root = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Root', is_mandatory=True, print_value=True)
+    username = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Username', is_mandatory=True, print_value=True)
+    api_token = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Api Token', is_mandatory=True, print_value=False)
+    verify_ssl = extract_configuration_param(simplify, provider_name=INTEGRATION_IDENTIFIER, param_name='Verify SSL', default_value=False, input_type=bool)
 
-		# Action parameters
-		project_key = extract_action_param(simplify, param_name="Project Key", is_mandatory=True, print_value=True)
-		summary = extract_action_param(simplify, param_name="Summary", is_mandatory=True, print_value=True)
-		description = extract_action_param(simplify, param_name="Description", is_mandatory=False, print_value=True)
-		issue_type = extract_action_param(simplify, param_name="Issue Type", is_mandatory=True, print_value=True)
-		initiator = extract_action_param(simplify, param_name="Jira Username", is_mandatory=False, print_value=True)
-		assignee = extract_action_param(simplify, param_name="Assignee", is_mandatory=False, print_value=True)
-		components = extract_action_param(simplify, param_name="Components", is_mandatory=False, print_value=True)
-		labels = extract_action_param(simplify, param_name="Labels", is_mandatory=False, print_value=True)
-		custom_fields = extract_action_param(simplify, param_name="Custom Fields", is_mandatory=False, print_value=True)
+    # Action parameters
+    project_key = extract_action_param(simplify, param_name="Project Key", is_mandatory=True, print_value=True)
+    summary = extract_action_param(simplify, param_name="Summary", is_mandatory=True, print_value=True)
+    description = extract_action_param(simplify, param_name="Description", is_mandatory=False, print_value=True)
+    issue_type = extract_action_param(simplify, param_name="Issue Type", is_mandatory=True, print_value=True)
+    initiator = extract_action_param(simplify, param_name="Jira Username", is_mandatory=False, print_value=True)
+    assignee = extract_action_param(simplify, param_name="Assignee", is_mandatory=False, print_value=True)
+    components = extract_action_param(simplify, param_name="Components", is_mandatory=False, print_value=True)
+    labels = extract_action_param(simplify, param_name="Labels", is_mandatory=False, print_value=True)
+    custom_fields = extract_action_param(simplify, param_name="Custom Fields", is_mandatory=False, print_value=True)
 
-		simplify.LOGGER.info("-------------- Main - Started --------------")
-		status = EXECUTION_STATE_COMPLETED
+    simplify.LOGGER.info("-------------- Main - Started --------------")
+    status = EXECUTION_STATE_COMPLETED
 
-		components_list_to_api_call = None
+    components_list_to_api_call = None
+    try:
+        try:
+	    custom_fields_dict = json.loads(custom_fields) if custom_fields else {}
+	except Exception:
+    	    raise Exception("Invalid JSON payload provided in the parameter \"Custom Fields\". Please check the structure.")
 
-		try:
-			try:
-				custom_fields_dict = json.loads(custom_fields) if custom_fields else {}
-			except Exception:
-			raise Exception("Invalid JSON payload provided in the parameter \"Custom Fields\". Please check the structure.")
+	jira = JiraManager(api_root, username, api_token, verify_ssl=verify_ssl)
 
-			jira = JiraManager(api_root, username, api_token, verify_ssl=verify_ssl)
+	if components:
+	    components_list = load_csv_to_list(components, "Components")
+	    simplify.LOGGER.info("Fetching {project_key} components")
+	    project_components = jira.get_project_components(project=project_key)
+	    simplify.LOGGER.info("Successfully fetched {project_key} components")
 
-			if components:
-				components_list = load_csv_to_list(components, "Components")
-				simplify.LOGGER.info("Fetching {project_key} components")
-				project_components = jira.get_project_components(project=project_key)
-				simplify.LOGGER.info("Successfully fetched {project_key} components")
+	    existing_components = [component for component in project_components if component.name in components_list]
+	    existing_components_names = [component.name for component in existing_components]
+	    not_existing_components = [component_name for component_name in list(set(components_list)) if component_name not in existing_components_names]
 
-				existing_components = [component for component in project_components if component.name in components_list]
-				existing_components_names = [component.name for component in existing_components]
-				not_existing_components = [component_name for component_name in list(set(components_list)) if component_name not in existing_components_names]
+	    if not_existing_components:
+		raise JiraValidationError(
+			f"Failed to create Jira issue because specified components: {} were not found.".format{', '.join(not_existing_components)}
+			f"was not found.")
 
-				if not_existing_components:
-					raise JiraValidationError(
-						f"Failed to create Jira issue because specified components: {} were not found.".format(', '.join(not_existing_components))
-					)
+		components_list_to_api_call = [{"id": component.id} for component in existing_components]
 
-				components_list_to_api_call = [{"id": component.id} for component in existing_components]
+	    labels_list = load_csv_to_list(labels, "Labels") if labels else None
 
-			labels_list = load_csv_to_list(labels, "Labels") if labels else None
+	    # On-prem; get User
+	    user_assignee = ''
+	    try:
+		if assignee:
+			users = jira.get_users_contains_username(username=assignee)
+			for user in users:
+				if (user.email_address and user.email_address == assignee) or \
+					(user.display_name and user.display_name == assignee) or \
+					(user.raw_data.get("name") == assignee):
 
-			# On-prem; get User
-			user_assignee = ''
-			try:
-				if assignee:
-					users = jira.get_users_contains_username(username=assignee)
-					for user in users:
-						if (user.email_address and user.email_address == assignee) or \
-							(user.display_name and user.display_name == assignee) or \
-							(user.raw_data.get("name") == assignee):
+				   simplify.LOGGER.info("User {} found.".format(assignee))
+				   user_assignee = user.raw_data.get("name")
+				   break
 
-							simplify.LOGGER.info("User {} found.".format(assignee))
-							user_assignee = user.raw_data.get("name")
-							break
-
-					if not user_assignee:
-						raise JiraValidationError("User {} does not exist.".format(assignee))
+			if not user_assignee:
+				raise JiraValidationError("User {} does not exist.".format(assignee))
 
 
-				simplify.LOGGER.info(f"Creating issue of type {issue_type} in project {project_key}")
-				issue_key = jira.create_issue(project_key, summary, issue_type, description, components=components_list_to_api_call, labels=labels_list,custom_fields=custom_fields_dict)
-				simplify.LOGGER.info(f"Successfully created issue with key {issue_key}")
+		simplify.LOGGER.info(f"Creating issue of type {issue_type} in project {project_key}")
+		issue_key = jira.create_issue(project_key, summary, issue_type, description, components=components_list_to_api_call, labels=labels_list,custom_fields=custom_fields_dict)
+		simplify.LOGGER.info(f"Successfully created issue with key {issue_key}")
 
-				result_value = issue_key
+		result_value = issue_key
 
 				if user_assignee and issue_key:
 					try:
