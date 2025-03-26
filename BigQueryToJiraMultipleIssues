@@ -37,7 +37,7 @@ def main():
 
     simplify.LOGGER.info("-------------- Main - Started --------------")
     status = EXECUTION_STATE_COMPLETED
-	
+
 	# Extracting list of issues in JSON format
     # issues_json = extract_action_param(simplify, param_name="Issues List", is_mandatory=True, print_value=False)
 	
