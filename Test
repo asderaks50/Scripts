@@ -1,1 +1,20 @@
+issue_keys = []
+
+for rule_key, rule_value in custom_fields_dict.items():  # Iterate over key-value pairs
+    simplify.LOGGER.info(f"Creating issue with custom field {rule_key}: {rule_value}")
+
+    issue_key = jira.create_issue(
+        project_key=project_key,
+        summary=f"{summary} - {rule_key}",  # Append rule_key for better issue tracking
+        issue_type=issue_type,
+        description=description,
+        components=components_list_to_api_call,
+        labels=labels_list,
+        custom_fields={rule_key: rule_value}  # Apply only the specific custom field
+    )
+
+    simplify.LOGGER.info(f"Successfully created issue with key {issue_key}")
+    issue_keys.append(issue_key)
+
+result_value = issue_keys  # Store all created issue keys
 
