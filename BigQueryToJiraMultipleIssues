@@ -31,11 +31,29 @@ def main():
     components = extract_action_param(simplify, param_name="Components", is_mandatory=False, print_value=True)
     labels = extract_action_param(simplify, param_name="Labels", is_mandatory=False, print_value=True)
     custom_fields = extract_action_param(simplify, param_name="Custom Fields", is_mandatory=False, print_value=True)
-    simplify.LOGGER.info("-------------- Main - Started --------------")
-	
-    # Extracting list of issues in JSON format
-    issues_json = extract_action_param(simplify, param_name="Issues List", is_mandatory=True, print_value=False)
     
+    simplify.LOGGER.info("-------------- Main - Started --------------")
+    status = EXECUTION_STATE_COMPLETED
+
+    # Extracting list of issues in JSON format
+    # issues_json = extract_action_param(simplify, param_name="Issues List", is_mandatory=True, print_value=False)
+
+    # Storing all parameters in a single JSON object
+    issues_json = {
+        "Project Key": project_key,
+        "Summary": summary,
+        "Description": description,
+        "Issue Type": issue_type,
+        "Jira Username": initiator,
+        "Assignee": assignee,
+        "Components": components,
+        "Labels": labels,
+        "Custom Fields": custom_fields
+    }
+
+    simplify.LOGGER.info(f"Issues JSON: {issues_json}")
+
+
     try:
         issues_list = json.loads(issues_json)
     except Exception:
