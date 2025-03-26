@@ -109,8 +109,9 @@ def main():
 
 
 			simplify.LOGGER.info(f"Creating issue of type {issue_type} in project {project_key}")
-			issue_key = jira.create_issue(project_key, summary, issue_type, description, components=components_list_to_api_call, labels=labels_list,custom_fields=custom_fields_dict)
-			simplify.LOGGER.info(f"Successfully created issue with key {issue_key}")
+			for rule in custom_fields_dict:
+				issue_key = jira.create_issue(project_key, summary=rule, issue_type, description, components=components_list_to_api_call, labels=labels_list,custom_fields=custom_fields_dict)
+				simplify.LOGGER.info(f"Successfully created issue with key {issue_key}")
 
 			result_value = issue_key
 
