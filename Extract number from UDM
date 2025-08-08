@@ -1,0 +1,40 @@
+import re
+import json
+from SimplifyAction import SimplifyAction
+from SimplifyUtils import output_handler
+from TIPCommon import extract_action_param
+from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
+
+@output_handler
+def main():
+    simplify = SimplifyAction()
+    simplify.script_name = "Extract Numbers from UDM Field"
+    simplify.LOGGER.info("-------------- Main - Param Init --------------")
+
+    # Extract the field value from input
+    udm_field_value = extract_action_param(
+        simplify,
+        param_name="UDM Field Value",  # Playbook parameter name
+        is_mandatory=True,
+        print_value=True
+    )
+
+    try:
+        # Extract only digits and convert them to integers
+        numbers = [int(num) for num in re.findall(r"\d+", udm_field_value)]
+
+        # Convert to JSON string
+        numbers_json = json.dumps({"Extracted_Numbers": numbers})
+
+        output_message = f"Extracted numbers in JSON: {numbers_json}"
+        simplify.LOGGER.info(output_message)
+
+        simplify.end(output_message, {"Extracted Numbers JSON": numbers_json}, EXECUTION_STATE_COMPLETED)
+
+    except Exception as e:
+        error_message = f"Error extracting numbers: {e}"
+        simplify.LOGGER.error(error_message)
+        simplify.end(error_message, {}, EXECUTION_STATE_FAILED)
+
+if __name__ == "__main__":
+    main()
