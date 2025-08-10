@@ -2,7 +2,7 @@ import re
 import json
 from SimplifyAction import SimplifyAction
 from SimplifyUtils import output_handler
-from TIPCommon import extract_action_param
+# from TIPCommon import extract_action_param
 from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
 
 @output_handler
@@ -12,15 +12,17 @@ def main():
     simplify.LOGGER.info("-------------- Main - Param Init --------------")
 
     # Extract the field value from input
-    udm_field_value = extract_action_param(
-        simplify,
-        param_name="UDM Field Value",  # Playbook parameter name
-        is_mandatory=True,
-        print_value=True
-    )
+	
+    #udm_field_value = extract_action_param(
+    #    simplify,
+    #    param_name="UDM Field Value",  # Playbook parameter name
+    #    is_mandatory=True,
+    #    print_value=True
+    #)
 
     try:
         # Extract only digits and convert them to integers
+		udm_field_value = json.loads(siemplify.extract_action_param("UDM_Field", print_value=True))
         numbers = [int(num) for num in re.findall(r"\d+", udm_field_value)]
 
         # Convert to JSON string
