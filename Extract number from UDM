@@ -22,9 +22,9 @@ def main():
 
         # Extract numbers from the string
         numbers = [int(num) for num in re.findall(r"\d+", udm_field_value)]
-
+        largest_number = max(numbers)
         # Prepare JSON result
-        numbers_json = json.dumps({"Extracted_Numbers": numbers})
+        numbers_json = json.dumps({"Extracted_Numbers": largest_number})
 
         output_message = f"Extracted numbers in JSON: {numbers_json}"
         siemplify.LOGGER.info(output_message)
