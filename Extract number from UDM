@@ -2,41 +2,40 @@ import re
 import json
 from SiemplifyAction import SiemplifyAction
 from SiemplifyUtils import output_handler
-# from TIPCommon import extract_action_param
 from ScriptResult import EXECUTION_STATE_COMPLETED, EXECUTION_STATE_FAILED
 
 @output_handler
 def main():
-	siemplify = SiemplifyAction()
-	siemplify.script_name = "Extract Numbers from UDM Field"
-	siemplify.LOGGER.info("-------------- Main - Param Init --------------")
-
-    # Extract the field value from input
-	
-    #udm_field_value = extract_action_param(
-    #    siemplify,
-    #    param_name="UDM Field Value",  # Playbook parameter name
-    #    is_mandatory=True,
-    #    print_value=True
-    #)
+    siemplify = SiemplifyAction()
+    siemplify.script_name = "Extract Numbers from UDM Field"
+    siemplify.LOGGER.info("-------------- Main - Param Init --------------")
 
     try:
-		# Extract only digits and convert them to integers
-		udm_field_value = json.loads(siemplify.extract_action_param("UDM_Field", print_value=True))
-		numbers = [int(num) for num in re.findall(r"\d+", udm_field_value)]
+        # Get UDM field as a plain string
+        udm_field_value = siemplify.extract_action_param("UDM_Field", print_value=True)
 
-		# Convert to JSON string
-		numbers_json = json.dumps({"Extracted_Numbers": numbers})
+        if not udm_field_value:
+            raise ValueError("UDM_Field parameter is empty.")
 
-		output_message = f"Extracted numbers in JSON: {numbers_json}"
-		siemplify.LOGGER.info(output_message)
+        # Ensure we work with string
+        udm_field_value = str(udm_field_value)
 
-		siemplify.end(output_message, {"Extracted Numbers JSON": numbers_json}, EXECUTION_STATE_COMPLETED)
+        # Extract numbers from the string
+        numbers = [int(num) for num in re.findall(r"\d+", udm_field_value)]
 
-	except Exception as e:
-		error_message = f"Error extracting numbers: {e}"
-		siemplify.LOGGER.error(error_message)
-		siemplify.end(error_message, {}, EXECUTION_STATE_FAILED)
+        # Prepare JSON result
+        numbers_json = json.dumps({"Extracted_Numbers": numbers})
+
+        output_message = f"Extracted numbers in JSON: {numbers_json}"
+        siemplify.LOGGER.info(output_message)
+
+        # End action
+        siemplify.end(output_message, numbers_json, EXECUTION_STATE_COMPLETED)
+
+    except Exception as e:
+        error_message = f"Error extracting numbers: {e}"
+        siemplify.LOGGER.error(error_message)
+        siemplify.end(error_message, "{}", EXECUTION_STATE_FAILED)
 
 if __name__ == "__main__":
-	main()
+    main()
