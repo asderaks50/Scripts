@@ -1,0 +1,49 @@
+from SiemplifyAction import SiemplifyAction
+from SiemplifyUtils import output_handler
+import requests
+import json
+import google.auth
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
+
+DATATABLES_ENDPOINT = "https://backstory.googleapis.com/v2/dataTables"
+
+# Replace with your Service Account JSON file path
+SERVICE_ACCOUNT_FILE = "chronicle-sa.json"
+SCOPES = ["https://www.googleapis.com/auth/chronicle-backstory"]
+
+@output_handler
+def main():
+    siemplify = SiemplifyAction()
+    
+    data_table_name = siemplify.parameters.get("DataTableName")
+    
+    try:
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
+        credentials.refresh(Request())
+        token = credentials.token
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+        # Call Chronicle DataTables API
+        url = f"{DATATABLES_ENDPOINT}/{data_table_name}:get"
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            siemplify.result.add_result_json(data)
+            siemplify.end(f"Successfully fetched DataTable: {data_table_name}", True)
+        else:
+            siemplify.end(f"Failed to fetch DataTable: {response.text}", False)
+
+    except Exception as e:
+        siemplify.end(f"Error occurred: {str(e)}", False)
+
+
+if __name__ == "__main__":
+    main()
